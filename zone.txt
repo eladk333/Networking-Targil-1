@@ -1,0 +1,7 @@
+biu.ac.il,1.2.3.4,A
+.co.il,1.2.3.5:777,NS
+example.com,1.2.3.7,A
+www.google.co.il,1.2.3.8,A
+mail.google.co.il,1.2.3.9,A
+root.com,203.0.113.1,A
+.net,203.0.113.2:5300,NS
