@@ -1,0 +1,5 @@
+www.google.co.il,1.2.3.8,A
+mail.google.co.il,1.2.3.9,A
+shop.co.il,1.2.3.10,A
+portal.co.il,1.2.3.11,A
+.internal.co.il,127.0.0.1:33333,NS

@@ -31,6 +31,7 @@ if __name__ == '__main__':
             # We format the input to match our search keys
             query = data.decode().strip()     
             query_lower = query.lower()
+            response = None
 
             # If query is in the cache            
             if query_lower in zone_records:
@@ -42,24 +43,41 @@ if __name__ == '__main__':
                         response = f"{rec['domain']},{rec['ip']},{rec['type']}"
             
             else:
-                # If not we query the father server
-                father_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                father_socket.sendto(data, (parent_IP, parent_Port))
-                father_data, father_addr = father_socket.recvfrom(1024)
-                father_response = father_data.decode().strip()
+                if response is None:
+                    current_server_ip = parent_IP
+                    current_server_port = parent_Port
+                    while True:
+                        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        temp_socket.settimeout(3.0) 
+                        temp_socket.sendto(data, (current_server_ip, current_server_port))
+                        temp_data, _ = temp_socket.recvfrom(1024)
+                        server_response = temp_data.decode().strip()
+                        temp_socket.close()
 
-                # If we got a valid response from the father server, we cache it
-                if father_response != "non-existent domain":
-                    parts = [p.strip() for p in father_response.split(',', 2)]
-                    name, ip_addr, rtype = parts
-                    zone_records[name.lower()] = {
-                        'domain': name,
-                        'ip': ip_addr,           
-                        'type': rtype.upper()    
-                    }  
-                
-                response = father_response
+                        response = server_response
+                    
 
-
+                        # If we got a valid response from the father server, we cache it
+                        if response != "non-existent domain":
+                            parts = [p.strip() for p in response.split(',', 2)]
+                            name, ip_addr, rtype = parts
+                            # We cache the result
+                            zone_records[name.lower()] = {
+                                'domain': name,
+                                'ip': ip_addr,           
+                                'type': rtype.upper(),
+                                'timestamp': time.time()    
+                            }  
+                            if rtype.upper() == 'A':
+                                break  # We got an A record, we are done
+                            elif rtype.upper() == 'NS':
+                                 if ':' in ip_addr:
+                                        current_server_ip, current_server_port = ip_addr.split(':')
+                                        current_server_port = int(current_server_port)
+                                 else:
+                                        current_server_ip = ip_addr
+                                        current_server_port = 53  
+                        else:
+                             break 
             # Sending response back to client
             s.sendto(response.encode(), addr)
